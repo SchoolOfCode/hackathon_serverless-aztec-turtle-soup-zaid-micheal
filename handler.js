@@ -9,12 +9,12 @@ all in this one file. */
 
 //--------------------------------------------------------------------------
 
-'use strict'; //turns on strict mode - prevents running if any warning error occur
-const AWS = require('aws-sdk'); //requires AWS CLI 
-const db = new AWS.DynamoDB.DocumentClient({ apiVersion: '2019.11.21' }); //creates a new instance of DynamoDB when called using the AWS SDK
-const { v4: uuidv4 } = require('uuid'); //auto-generates unique ids
+"use strict"; //turns on strict mode - prevents running if any warning error occur
+const AWS = require("aws-sdk"); //requires AWS CLI
+const db = new AWS.DynamoDB.DocumentClient({ apiVersion: "2019.11.21" }); //creates a new instance of DynamoDB when called using the AWS SDK
+const { v4: uuidv4 } = require("uuid"); //auto-generates unique ids
 
-const dictionaryTable = process.env.TABLE; //gets the table from the environment
+const bootcampersTable = process.env.TABLE; //gets the table from the environment
 //variables (which we've set up in the YAML) and saves it to a variable we can
 //use in the functions below
 //(for this example, we have a table that acts like a register, saving bootcampers
@@ -31,11 +31,11 @@ function response(statusCode, message) {
     headers: {
       //sticks all the right headers on to talk to the request during the
       //preflight check (CORS)
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true,
-      'Access-Control-Allow-Methods': 'GET, OPTIONS, POST, PUT, DELETE',
-      'Content-Type': 'application/json',
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Credentials": true,
+      "Access-Control-Allow-Methods": "GET, OPTIONS, POST, PUT, DELETE",
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(message), //stringifies the body object into JSON
   };
@@ -43,7 +43,11 @@ function response(statusCode, message) {
 
 //---------GET ALL ITEMS IN THE TABLE:---------
 
-module.exports.getAllItems = (event, context, callback) => {
+// async function getItemById(event, context, callback) {
+//   const res = await db.scan();
+// }
+
+module.exports.getAllBootcampers = (event, context, callback) => {
   /* all lambda functions take in event (the request) along with context 
   and callback (which then lets you use that response helper function above) */
 
@@ -57,10 +61,10 @@ module.exports.getAllItems = (event, context, callback) => {
         quickly if your table's big). For a small table like what you're setting 
         up today, though, It's fine. It's just something to be aware of for the 
         future. */
-        TableName: dictionaryTable, //which table to scan
+        TableName: bootcampersTable, //which table to scan
       })
       .promise()
-      .then((res) => callback(null, response(200, res.Items))) //status code 200 for success
+      .then((res) => callback(null, response(200, res.player))) //status code 200 for success
       //message becomes JSON with all of the items in the table
       .catch((err) => callback(null, response(err.statusCode, err))) //error handling
     //gets the status code from the error and the error itself as the message
@@ -68,8 +72,7 @@ module.exports.getAllItems = (event, context, callback) => {
 };
 
 //---------GET A SINGLE ITEM BY ID:---------
-
-module.exports.getItemById = (event, context, callback) => {
+module.exports.getBootcamperById = (event, context, callback) => {
   const id = event.pathParameters.id; //gets the id out of the parameters of
   //the event aka the request (the DynamoDB equivalent of doing req.params)
 
@@ -80,7 +83,7 @@ module.exports.getItemById = (event, context, callback) => {
     Key: {
       id: id,
     },
-    TableName: dictionaryTable,
+    TableName: bootcampersTable,
   };
 
   return db
@@ -92,7 +95,7 @@ module.exports.getItemById = (event, context, callback) => {
       else
         callback(
           null,
-          response(404, { error: 'No item with that name found' })
+          response(404, { error: "No item with that name found" })
         ); //if it doesn't find anything w/ that id, 404 error instead
     })
     .catch((err) => callback(null, response(err.statusCode, err)));
@@ -100,7 +103,7 @@ module.exports.getItemById = (event, context, callback) => {
 
 //---------POST NEW ITEM:---------
 
-module.exports.addItem = (event, context, callback) => {
+module.exports.addBootcamper = (event, context, callback) => {
   /*   I've set up the example item below as a dictionary entry with a name 
 key and a definition key; you can have as many as you want (just like a 
   standard JSON); you just have to tell it what to expect below. Example JSON
@@ -109,14 +112,15 @@ key and a definition key; you can have as many as you want (just like a
   const reqBody = JSON.parse(event.body); //parses the whole body out of
   //the event (the request) and saves it to a variable
 
-  const item = {
+  const Bootcamper = {
     //creates the item that will then be added to the database, incl the bits
     //from the request body
     id: uuidv4(), //uses uuid to autogenerate a new unique id for the item
     createdAt: new Date().toISOString(), //automatically adds a human-readable date
-    name: reqBody.name, //destructures the name string out of the request body
+    player: reqBody.player,
+    //destructures the name string out of the request body
     //and saves it to the name key for the database
-    definition: reqBody.definition, //destructures the definition string out
+    score: reqBody.score, //destructures the definition string out
     //of the request body and saves it to the definition key for the database
   };
 
@@ -127,8 +131,8 @@ key and a definition key; you can have as many as you want (just like a
       to respond to post requests, you still use put here when it's talking 
       directly to DynamoDB (it puts a new item rather than putting a 
         replacement here) */
-      TableName: dictionaryTable,
-      Item: item,
+      TableName: bootcampersTable,
+      Item: Bootcamper,
     })
     .promise()
     .then(() => {
@@ -139,20 +143,20 @@ key and a definition key; you can have as many as you want (just like a
 
 //---------UPDATE ITEM (PUT REQUEST):---------
 
-module.exports.updateItem = (event, context, callback) => {
+module.exports.updateBootcamper = (event, context, callback) => {
   const id = event.pathParameters.id; //gets the id out of the path params
   //just like in the get by id function above
   const reqBody = JSON.parse(event.body); //parses the body just like with
   //the addItem post function above
 
-  const item = {
+  const Bootcamper = {
     //similar to addItem above, this uses the body, but we already have the
     //id from the params, so we use it and don't generate a new one with uuid
     id: id, //it'll use the id to match the item since it's the partition
     //key (DynamoDB equivalent of primary key)
     createdAt: new Date().toISOString(), //replaces the initial createdAt date
-    name: reqBody.name,
-    definition: reqBody.definition,
+    player: reqBody.player,
+    score: reqBody.score,
   };
 
   return db
@@ -160,8 +164,8 @@ module.exports.updateItem = (event, context, callback) => {
       //just like in the post function above (still a put, but this time
       //we're doing a put request like we're used to, making a direct
       //replacement of the item)
-      TableName: dictionaryTable,
-      Item: item,
+      TableName: bootcampersTable,
+      Item: Bootcamper,
     })
     .promise()
     .then((res) => {
@@ -172,7 +176,7 @@ module.exports.updateItem = (event, context, callback) => {
 
 //---------DELETE ITEM:---------
 
-module.exports.deleteItem = (event, context, callback) => {
+module.exports.deleteBootcamper = (event, context, callback) => {
   const id = event.pathParameters.id;
 
   const params = {
@@ -180,7 +184,7 @@ module.exports.deleteItem = (event, context, callback) => {
     Key: {
       id: id,
     },
-    TableName: dictionaryTable,
+    TableName: bootcampersTable,
   };
 
   return (
