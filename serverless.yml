@@ -26,35 +26,35 @@ provider:
 #the above is the same as this, white space is impotant in yml const provider = {name: aws, runtime: nodejs12.x}
 
 functions: #function object
-  getAllItems:
+  getAllBootcampers:
     handler: handler.getAllBootcampers
     events:
       - http:
           path: / #this is our root path
           method: get #GET method
           cors: true #with our express server we have cors middleware, there we do this to allow them
-  getItemById: #to get one item
+  getBootcamperById: #to get one item
     handler: handler.getBootcamperById
     events:
       - http:
           path: /{id} #wrap it in {} because they're path parameters
           method: get
           cors: true
-  addItem:
+  addBootcamper:
     handler: handler.addBootcamper
     events:
       - http:
           path: /
           method: post
           cors: true
-  updateItem:
+  updateBootcamper:
     handler: handler.updateBootcamper
     events:
       - http:
           path: /{id}
           method: put
           cors: true
-  deleteItem:
+  deleteBootcamper:
     handler: handler.deleteBootcamper
     events:
       - http:
